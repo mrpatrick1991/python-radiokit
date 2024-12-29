@@ -1,3 +1,0 @@
-[submodule "third_party/itm"]
-	path = third_party/itm
-	url = https://github.com/NTIA/itm
