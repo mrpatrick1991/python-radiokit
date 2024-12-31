@@ -69,7 +69,7 @@ py::dict wrap_intermediate_values(const IntermediateValues &values) {
 PYBIND11_MODULE(itm_bindings, m) {
   m.doc() = "Python bindings for ITM propagation model";
 
-  // Wrap ITM_P2P_TLS function
+  // ITM_P2P_TLS
   m.def("itm_p2p_tls",
         [](double h_tx, double h_rx, const std::vector<double> &pfl,
            int climate, double N_0, double f_mhz, int pol, double epsilon,
@@ -83,7 +83,7 @@ PYBIND11_MODULE(itm_bindings, m) {
           return py::make_tuple(status, A_db, parse_warnings(warnings));
         });
 
-  // Wrap ITM_P2P_TLS_Ex function
+  // ITM_P2P_TLS_Ex
   m.def(
       "itm_p2p_tls_ex",
       [](double h_tx, double h_rx, const std::vector<double> &pfl, int climate,
@@ -110,7 +110,7 @@ PYBIND11_MODULE(itm_bindings, m) {
       py::arg("sigma"), py::arg("mdvar"), py::arg("time"), py::arg("location"),
       py::arg("situation"));
 
-  // Wrap ITM_P2P_CR function
+  // ITM_P2P_CR
   m.def("itm_p2p_cr",
         [](double h_tx, double h_rx, const std::vector<double> &pfl,
            int climate, double N_0, double f_mhz, int pol, double epsilon,
@@ -123,7 +123,7 @@ PYBIND11_MODULE(itm_bindings, m) {
           return py::make_tuple(status, A_db, parse_warnings(warnings));
         });
 
-  // Wrap ITM_P2P_CR_Ex function
+  // ITM_P2P_CR_Ex
   m.def(
       "itm_p2p_cr_ex",
       [](double h_tx, double h_rx, const std::vector<double> &pfl, int climate,
@@ -151,7 +151,7 @@ PYBIND11_MODULE(itm_bindings, m) {
       py::arg("sigma"), py::arg("mdvar"), py::arg("confidence"),
       py::arg("reliability"));
 
-  // Wrap ITM_AREA_TLS function
+  // ITM_AREA_TLS
   m.def("itm_area_tls",
         [](double h_tx, double h_rx, int tx_site_criteria, int rx_site_criteria,
            double d_km, double delta_h_meter, int climate, double N_0,
@@ -166,7 +166,7 @@ PYBIND11_MODULE(itm_bindings, m) {
           return py::make_tuple(status, A_db, parse_warnings(warnings));
         });
 
-  // Wrap ITM_AREA_TLS_Ex function
+  // ITM_AREA_TLS_Ex
   m.def(
       "itm_area_tls_ex",
       [](double h_tx, double h_rx, int tx_site_criteria, int rx_site_criteria,
@@ -197,7 +197,7 @@ PYBIND11_MODULE(itm_bindings, m) {
       py::arg("epsilon"), py::arg("sigma"), py::arg("mdvar"), py::arg("time"),
       py::arg("location"), py::arg("situation"));
 
-  // Wrap ITM_AREA_CR function
+  // ITM_AREA_CR
   m.def(
       "itm_area_cr",
       [](double h_tx, double h_rx, int tx_site_criteria, int rx_site_criteria,
@@ -224,7 +224,7 @@ PYBIND11_MODULE(itm_bindings, m) {
       py::arg("epsilon"), py::arg("sigma"), py::arg("mdvar"),
       py::arg("confidence"), py::arg("reliability"));
 
-  // Wrap ITM_AREA_CR_Ex function
+  // ITM_AREA_CR_Ex
   m.def(
       "itm_area_cr_ex",
       [](double h_tx, double h_rx, int tx_site_criteria, int rx_site_criteria,
