@@ -132,3 +132,4 @@ def fetch(
     cache[cache_key] = geotiff_data
 
     return geotiff_data
+

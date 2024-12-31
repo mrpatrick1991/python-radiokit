@@ -35,7 +35,7 @@ print(result)
 print(end-start)
 
 
-data = ot.fetch(dataset="SRTMGL3", lat=51.0447 ,lon=-114.0719,radius_km=5, api_key=config["OPENTOPO_API_KEY"])
+data = ot.fetch(dataset="SRTMGL3", lat=51.0447 ,lon=-114.0719,radius_km=1, api_key=config["OPENTOPO_API_KEY"])
 
 with open("foo.tif","wb") as f:
     f.write(data)
