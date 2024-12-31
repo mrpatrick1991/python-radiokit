@@ -4,4 +4,8 @@
 build/
 *.whl
 *.egg-info
-dist/*
+dist/
+.env
+.tilecache
+radiokit.egg-info/
+*.tar.gz

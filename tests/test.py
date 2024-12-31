@@ -1,6 +1,11 @@
 from radiokit.models import itm
+from radiokit.terrain import opentopography as ot
 import random
 from timeit import default_timer as timer
+
+from dotenv import dotenv_values
+config = dotenv_values(".env")
+
 
 # Example parameters
 h_tx = 20.0
@@ -29,4 +34,9 @@ end = timer()
 print(result)
 print(end-start)
 
+
+data = ot.fetch(dataset="SRTMGL3", lat=51.0447 ,lon=-114.0719,radius_km=5, api_key=config["OPENTOPO_API_KEY"])
+
+with open("foo.tif","wb") as f:
+    f.write(data)
 
