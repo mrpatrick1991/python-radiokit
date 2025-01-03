@@ -3,7 +3,9 @@ import math
 from typing import Tuple, Literal
 from pydantic import BaseModel, Field
 from diskcache import Cache
-
+from rasterio.io import MemoryFile
+from typing import Dict
+import h3
 
 class OpenTopographyRequest(BaseModel):
     demtype: Literal[
@@ -34,15 +36,15 @@ class OpenTopographyRequest(BaseModel):
 
 
 def _calculate_bbox(
-    lat: float, lon: float, radius_km: float
+    lat: float, lon: float, radius_m: float
 ) -> Tuple[float, float, float, float]:
     """
-    Calculate a lat/lon bounding box around a point with a given radius in kilometers.
+    Calculate a lat/lon bounding box around a point with a given radius in meters.
 
     Args:
         lat (float): Latitude in degrees.
         lon (float): Longitude in degrees.
-        radius_km (float): Radius in kilometers.
+        radius_m (float): Radius in meters.
 
     Returns:
         Tuple[float, float, float, float]: Bounding box (south, north, west, east).
@@ -54,7 +56,7 @@ def _calculate_bbox(
     lon_rad = math.radians(lon)
 
     # Angular distance in radians for the given radius
-    angular_distance = radius_km / EARTH_RADIUS_KM
+    angular_distance = radius_m / (EARTH_RADIUS_KM*1000)
 
     # Calculate the latitude bounds
     lat_min_rad = lat_rad - angular_distance
@@ -71,37 +73,37 @@ def _calculate_bbox(
     east = math.degrees(lon_max_rad)
 
     return (south, north, west, east)
-
-
 def fetch(
-    dataset: str,
-    lat: float,
-    lon: float,
-    radius_km: float,
-    api_key: str,
-    cache_dir: str = ".tilecache",
-    cache_size_gb: int = 1,
-) -> bytes:
+        dataset: str,
+        lat: float,
+        lon: float,
+        radius_m: float,
+        api_key: str,
+        resolution: int = 8,
+        cache_dir: str = ".tilecache",
+        cache_size_gb: int = 1,
+) -> Dict[str, int]:
     """
-    Fetch digital elevation data from OpenTopography.
+    Fetch digital elevation data from OpenTopography and return elevation values for H3 cells.
 
     Args:
         dataset (str): The DEM dataset name.
         lat (float): Latitude of the center point.
         lon (float): Longitude of the center point.
-        radius_km (float): Radius around the center point in kilometers.
+        radius_m (float): Radius around the center point in meters.
         api_key (str): API key for OpenTopography.
+        resolution (int): H3 resolution level.
         cache_dir (str): Directory for the terrain tile / DEM cache.
         cache_size_gb (int): Maximum cache size in GB.
 
     Returns:
-        GeoTIFF data as bytes.
+        Dict[str, float]: Dictionary with H3 cell IDs as keys and elevations as values.
     """
     # Initialize the disk cache
     cache = Cache(cache_dir, size_limit=cache_size_gb * 1024 * 1024 * 1024)
 
     # Calculate the bounding box
-    bbox = _calculate_bbox(lat, lon, radius_km)
+    bbox = _calculate_bbox(lat, lon, radius_m)
 
     # Validate the request
     request_data = OpenTopographyRequest(
@@ -113,10 +115,11 @@ def fetch(
         api_key=api_key,
     )
 
-    cache_key = f"{dataset}_{bbox}"
+    cache_key = f"{dataset}_{bbox}_{resolution}"
     if cache_key in cache:
         return cache[cache_key]
 
+    # Fetch GeoTIFF data
     url = "https://portal.opentopography.org/API/globaldem"
     params = {
         "demtype": request_data.demtype,
@@ -127,9 +130,28 @@ def fetch(
         "API_Key": request_data.api_key,
     }
     response = requests.get(url, params=params, stream=True)
+
     response.raise_for_status()
     geotiff_data = response.content
-    cache[cache_key] = geotiff_data
 
-    return geotiff_data
+    # Process the GeoTIFF data
+    h3_elevations = {}
+    with MemoryFile(geotiff_data) as memfile:
+        with memfile.open() as dataset:
+            # Generate H3 cell IDs within the bounding box
+            latitudes = [bbox[0] + i * (bbox[1] - bbox[0]) / 100 for i in range(101)]
+            longitudes = [bbox[2] + i * (bbox[3] - bbox[2]) / 100 for i in range(101)]
+
+            for lat in latitudes:
+                for lon in longitudes:
+                    h3_cell = h3.latlng_to_cell(lat, lon, resolution)
+                    if h3_cell not in h3_elevations:  # Avoid duplicate queries
+                        # Query elevation for the H3 cell center
+                        row, col = dataset.index(lon, lat)
+                        if 0 <= row < dataset.height and 0 <= col < dataset.width:
+                            h3_elevations[h3_cell] = int(dataset.read(1)[row, col])
+
+    # Cache and return the result
+    cache[cache_key] = h3_elevations
+    return h3_elevations
 
